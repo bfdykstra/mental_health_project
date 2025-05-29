@@ -1,134 +1,165 @@
-# Patient Prompt Tagging Script
+# Mental Health Prompt Embeddings
 
-This script uses an LLM with Python Instructor to generate 1-4 tags for each patient prompt in your CSV data. The tags are designed to be used as search keyword metadata within a vector database to help mental health counselors find relevant examples.
-
-## Features
-
-- **Structured Outputs**: Uses Python Instructor with Pydantic models to ensure consistent tag generation
-- **Flexible LLM Support**: Works with OpenAI API or local models (like Ollama)
-- **Resume Capability**: Can resume processing from any row if interrupted
-- **Progress Tracking**: Shows progress and saves incrementally
-- **Error Handling**: Graceful error handling with fallback tags
+This project creates embeddings from mental health prompts and stores them in ChromaDB for semantic search, and provides a FastAPI web service for accessing the data.
 
 ## Setup
 
-1. **Install Dependencies**
+1. **Install dependencies:**
 
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Choose Your LLM Option**
+2. **Set up OpenAI API key:**
+   Create a `.env` file in the project root:
+   ```
+   OPENAI_API_KEY=your_openai_api_key_here
+   ```
 
-   ### Option A: OpenAI API
+## FastAPI Web Service
 
-   - Get an API key from [OpenAI](https://platform.openai.com/api-keys)
-   - Set the environment variable:
-     ```bash
-     export OPENAI_API_KEY="your-api-key-here"
-     ```
-   - Or pass it directly using `--api-key` parameter
+### Running the API
 
-   ### Option B: Local Model (Ollama)
+To start the FastAPI server:
 
-   - Install [Ollama](https://ollama.ai/)
-   - Pull a model: `ollama pull llama2` or `ollama pull mistral`
-   - Start Ollama: `ollama serve`
+```bash
+# Option 1: Using the run script
+python run_server.py
+
+# Option 2: Using uvicorn directly
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Option 3: Running the main file directly
+python main.py
+```
+
+The API will be available at `http://localhost:8000`
+
+### API Endpoints
+
+- **GET /** - Hello world endpoint
+
+  ```
+  Response: {"message": "Hello, World!"}
+  ```
+
+- **GET /health** - Health check endpoint
+
+  ```
+  Response: {"status": "healthy", "service": "Mental Health API"}
+  ```
+
+- **GET /hello/{name}** - Personalized hello endpoint
+  ```
+  Example: GET /hello/John
+  Response: {"message": "Hello, John!"}
+  ```
+
+### API Documentation
+
+Once the server is running, you can access:
+
+- **Interactive API docs (Swagger UI)**: http://localhost:8000/docs
+- **ReDoc documentation**: http://localhost:8000/redoc
+- **OpenAPI schema**: http://localhost:8000/openapi.json
 
 ## Usage
 
-### Basic Usage (with OpenAI)
+### 1. Create Embeddings
+
+Run the embedding creation script to process your CSV file and create the vector store:
 
 ```bash
-python tag_prompts.py
+python create_embeddings.py
 ```
 
-### With Custom Parameters
+This script will:
+
+- Read the `data/pair_data_tagged.csv` file
+- Generate embeddings for each prompt using OpenAI's `text-embedding-ada-002` model
+- Store embeddings in ChromaDB with metadata including:
+  - Original prompt text
+  - Search keywords
+  - Quality buckets (high, medium, low quality responses)
+- Save the vector store to `./chroma_db/`
+
+### 2. Search Embeddings
+
+Use the search script to find similar prompts:
 
 ```bash
-python tag_prompts.py \
-  --input data/pair_data.csv \
-  --output data/pair_data_tagged.csv \
-  --model gpt-3.5-turbo \
-  --max-rows 50
+python search_embeddings.py
 ```
 
-### Resume from Specific Row
+This script demonstrates various search capabilities:
 
-```bash
-python tag_prompts.py --start-row 100 --max-rows 50
+- **Semantic search**: Find prompts similar to a query text
+- **Quality filtering**: Filter results by response quality levels
+- **Keyword filtering**: Filter by specific search keywords
+- **Combined filtering**: Use both semantic similarity and keyword matching
+
+## Data Structure
+
+The CSV file should have the following columns:
+
+| Column            | Description                                 |
+| ----------------- | ------------------------------------------- |
+| `prompt`          | The user's input or concern                 |
+| `hq1`, `hq2`      | High quality responses                      |
+| `mq1`             | Medium quality responses                    |
+| `lq1` - `lq5`     | Low quality responses                       |
+| `search_keywords` | Comma-separated keywords for categorization |
+
+## Example Usage
+
+```python
+from search_embeddings import EmbeddingSearcher
+
+# Initialize searcher
+searcher = EmbeddingSearcher()
+
+# Basic semantic search
+results = searcher.search("I feel anxious and stressed", top_k=5)
+
+# Search with quality filter (high quality only)
+hq_results = searcher.search(
+    "I can't sleep",
+    top_k=3,
+    quality_filter=['high_quality']
+)
+
+# Search with keyword filter
+filtered_results = searcher.search(
+    "weight loss motivation",
+    top_k=5,
+    keyword_filter=['Weight Management', 'Nutrition']
+)
+
+# Keyword-only search
+keyword_results = searcher.search_by_keywords(['Anxiety', 'Depression'])
 ```
 
-## Command Line Options
+## Features
 
-- `--input`: Input CSV file path (default: `data/pair_data.csv`)
-- `--output`: Output CSV file path (default: `data/pair_data_tagged.csv`)
-- `--api-key`: OpenAI API key (or set `OPENAI_API_KEY` env var)
-- `--base-url`: Custom base URL for local models (e.g., `http://localhost:11434/v1`)
-- `--model`: Model name to use (default: `gpt-3.5-turbo`)
-- `--start-row`: Row to start processing from (default: 0)
-- `--max-rows`: Maximum number of rows to process
+- **Semantic Search**: Find conceptually similar prompts even if they use different words
+- **Quality Filtering**: Filter responses by quality levels (high/medium/low)
+- **Keyword Filtering**: Filter by categorical search keywords
+- **Persistent Storage**: Vector store is saved to disk and can be reused
+- **Metadata Preservation**: All original data is preserved as searchable metadata
+- **Batch Processing**: Efficient handling of large datasets
+- **Error Handling**: Robust error handling for API calls and data processing
 
-## Testing
+## Files
 
-Before running on the full dataset, test with a few samples:
+- `create_embeddings.py`: Main script to create embeddings from CSV
+- `search_embeddings.py`: Script for searching and filtering embeddings
+- `requirements.txt`: Python dependencies
+- `data/pair_data_tagged.csv`: Input data file
+- `chroma_db/`: Generated vector store directory (created after running the script)
 
-```bash
-python test_tagging.py
-```
+## Notes
 
-This will process 3 sample prompts and show you the generated tags.
-
-## Example Output
-
-The script adds a new `tags` column to your CSV with comma-separated tags:
-
-| prompt                                                         | tags                                                   |
-| -------------------------------------------------------------- | ------------------------------------------------------ |
-| "I know I am too big, and I probably should exercise more..."  | weight management, exercise barriers, time constraints |
-| "I don't trust doctors. I don't trust the CDC..."              | vaccine hesitancy, medical distrust, COVID-19          |
-| "Of course, I would like to lose weight and not feel gross..." | body image, diet frustration, weight loss              |
-
-## Tag Quality
-
-The generated tags are designed to be:
-
-- **Concise**: 1-3 words each
-- **Specific**: Relevant to healthcare/mental health contexts
-- **Searchable**: Useful for finding similar cases in a vector database
-- **Comprehensive**: Cover main themes in each prompt
-
-## Troubleshooting
-
-1. **OpenAI API Key Issues**
-
-   - Ensure your API key is set correctly
-   - Check your OpenAI account has sufficient credits
-
-2. **Local Model Issues**
-
-   - Ensure Ollama is running: `ollama serve`
-   - Check model is pulled: `ollama list`
-   - Verify the base URL: `http://localhost:11434/v1`
-
-3. **Memory Issues**
-
-   - Process in smaller batches using `--max-rows`
-   - Use `--start-row` to resume processing
-
-4. **Network Issues**
-   - The script saves progress every 10 rows
-   - Resume from the last saved point using `--start-row`
-
-## File Structure
-
-```
-.
-├── tag_prompts.py          # Main tagging script
-├── test_tagging.py         # Test script for verification
-├── requirements.txt        # Python dependencies
-├── README.md              # This file
-└── data/
-    ├── pair_data.csv      # Input data
-    └── pair_data_tagged.csv # Output with tags
-```
+- The script uses OpenAI's `text-embedding-ada-002` model for generating embeddings
+- ChromaDB provides persistent local storage for the vector database
+- Embedding generation may take some time depending on the size of your dataset
+- Make sure you have sufficient OpenAI API credits for the embedding generation
