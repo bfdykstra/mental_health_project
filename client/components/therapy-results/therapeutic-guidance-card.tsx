@@ -21,7 +21,7 @@ export function TherapeuticGuidanceCard({
       <CardHeader>
         <CardTitle className="flex items-center">
           <Brain className="h-5 w-5 mr-2 text-legacy-green" />
-          Therapeutic Guidance
+          Possible Therapeutic Response
           {isLoading && isStreaming && response && (
             <Badge variant="outline" className="ml-2">
               <Loader2 className="h-3 w-3 animate-spin mr-1" />

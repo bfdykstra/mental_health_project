@@ -227,6 +227,8 @@ REFLECTIVE LISTENING TECHNIQUES TO USE:
 - Meaning reflection: Reflect the underlying significance or values expressed
 - Double-sided reflection: Acknowledge ambivalence when present ("On one hand... and on the other hand...")
 
+Provide a brief explanation of how that response demonstrates reflective listening.
+
 AVOID:
 - Giving advice or solutions unless specifically requested
 - Asking multiple questions 
@@ -234,7 +236,7 @@ AVOID:
 - Minimizing or dismissing their concerns
 - Being overly clinical or detached
 
-Your reflective listening response:"""
+Your reflective listening response and explanation of how that response demonstrates reflective listening:"""
     
     return prompt 
 
