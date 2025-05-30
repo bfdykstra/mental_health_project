@@ -23,7 +23,7 @@ interface PatientInputFormProps {
   setTopK: (topK: number) => void;
   isLoading: boolean;
   isStreaming: boolean;
-  setIsStreaming: (streaming: boolean) => void;
+  // setIsStreaming: (streaming: boolean) => void;
   onSubmit: (e: React.FormEvent) => void;
 }
 
@@ -34,13 +34,18 @@ export function PatientInputForm({
   setSelectedKeywords,
   isLoading,
   isStreaming,
-  setIsStreaming,
+  // setIsStreaming,
   onSubmit,
 }: PatientInputFormProps) {
   const keywordOptions = THERAPY_KEYWORDS.map((keyword) => ({
     label: keyword,
     value: keyword,
   }));
+
+  const placeholder = `Patient: "I've been feeling really overwhelmed lately with work and family responsibilities. I can't seem to find time for myself and I'm starting to feel burned out. Sometimes I just want to run away from everything. How do I deal with these feelings?"
+  
+How should I respond to this patient who is expressing feelings of overwhelm and burnout?
+`;
 
   return (
     <Card className="h-fit">
@@ -50,8 +55,8 @@ export function PatientInputForm({
           Patient Information & Query
         </CardTitle>
         <CardDescription>
-          Provide patient transcript excerpts and your specific question about
-          therapeutic approach.
+          Provide patient transcript excerpts and a specific question to receive
+          some guidance on how to best respond.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -62,7 +67,7 @@ export function PatientInputForm({
             </Label>
             <Textarea
               id="query"
-              placeholder="Example:&#10;&#10;Patient: 'I've been feeling really overwhelmed lately with work and family responsibilities. I can't seem to find time for myself and I'm starting to feel burned out. Sometimes I just want to run away from everything. How do I deal with these feelings?'&#10;&#10;Question: How should I respond to this patient who is expressing feelings of overwhelm and burnout?"
+              placeholder={placeholder}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="min-h-[200px] resize-none"
@@ -81,36 +86,6 @@ export function PatientInputForm({
               placeholder="Select relevant keywords..."
               variant="inverted"
               maxCount={5}
-            />
-          </div>
-
-          {/* Streaming Mode Toggle */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center space-x-3">
-              {isStreaming ? (
-                <Zap className="h-5 w-5 text-blue-500" />
-              ) : (
-                <Clock className="h-5 w-5 text-gray-500" />
-              )}
-              <div>
-                <Label
-                  htmlFor="streaming-mode"
-                  className="text-sm font-medium cursor-pointer"
-                >
-                  {isStreaming ? "Real-time Streaming" : "Standard Mode"}
-                </Label>
-                <p className="text-xs text-gray-600">
-                  {isStreaming
-                    ? "See results as they generate for faster feedback"
-                    : "Wait for complete response before displaying results"}
-                </p>
-              </div>
-            </div>
-            <Switch
-              id="streaming-mode"
-              checked={isStreaming}
-              onCheckedChange={setIsStreaming}
-              disabled={isLoading}
             />
           </div>
 

@@ -3,7 +3,6 @@ import type { TherapyResponse, SimilarExample } from "@/types/therapy";
 import { ProgressCard } from "./progress-card";
 import { TherapeuticGuidanceCard } from "./therapeutic-guidance-card";
 import { AppliedKeywordsCard } from "./applied-keywords-card";
-import { SimilarCasesCard } from "./similar-cases-card";
 import { EmptyResultsState } from "./empty-results-state";
 
 interface StreamingResultsProps {
@@ -23,11 +22,8 @@ export function StreamingResults({
   streamingResponse,
   finalResponse,
 }: StreamingResultsProps) {
-  console.log("hello: ", similarExamples);
-
   // Determine what to show based on current state
-  const hasContent =
-    streamingResponse || finalResponse || similarExamples.length > 0;
+  const hasContent = streamingResponse || finalResponse;
   const showEmptyState = !isLoading && !hasContent;
 
   return (
@@ -45,13 +41,6 @@ export function StreamingResults({
       {/* Applied keywords - only show when final response is available */}
       {finalResponse && (
         <AppliedKeywordsCard keywords={finalResponse.keywords} />
-      )}
-
-      {/* Similar cases - show streaming examples or final examples */}
-      {(similarExamples.length > 0 || finalResponse?.similar_examples) && (
-        <SimilarCasesCard
-          examples={finalResponse?.similar_examples || similarExamples}
-        />
       )}
 
       {/* Empty state */}

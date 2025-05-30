@@ -9,6 +9,7 @@ import { HeroSection } from "@/components/hero-section";
 import { PatientInputForm } from "@/components/patient-input-form";
 import { TherapyResults } from "@/components/therapy-results/therapy-results";
 import { StreamingResults } from "@/components/therapy-results/streaming-results";
+import { SimilarCasesCard } from "@/components/therapy-results/similar-cases-card";
 
 export default function TherapyCopilot() {
   const [query, setQuery] = useState("");
@@ -46,7 +47,6 @@ export default function TherapyCopilot() {
     };
 
     if (isStreaming) {
-      // Use streaming API
       streamApi(
         "/synthesize-therapy-response/stream",
         requestData,
@@ -80,7 +80,6 @@ export default function TherapyCopilot() {
           setIsLoading(false);
         },
         () => {
-          console.log("Stream completed");
           setIsLoading(false);
         }
       );
@@ -94,7 +93,6 @@ export default function TherapyCopilot() {
           },
           body: JSON.stringify(requestData),
         });
-        console.log("Response:", res);
         const data: TherapyResponse = res;
         setResponse(data);
       } catch (error) {
@@ -122,7 +120,6 @@ export default function TherapyCopilot() {
             setTopK={setTopK}
             isLoading={isLoading}
             isStreaming={isStreaming}
-            setIsStreaming={setIsStreaming}
             onSubmit={handleSubmit}
           />
 
@@ -139,6 +136,18 @@ export default function TherapyCopilot() {
             <TherapyResults response={response} isLoading={isLoading} />
           )}
         </div>
+
+        {/* Similar Cases Section - Full width below the main grid */}
+        {((isStreaming &&
+          (streamingSimilarExamples.length > 0 ||
+            response?.similar_examples)) ||
+          (!isStreaming && response?.similar_examples)) && (
+          <div className="mt-4">
+            <SimilarCasesCard
+              examples={response?.similar_examples || streamingSimilarExamples}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
