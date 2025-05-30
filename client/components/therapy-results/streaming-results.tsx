@@ -27,24 +27,39 @@ export function StreamingResults({
   const showEmptyState = !isLoading && !hasContent;
 
   return (
-    <div className="space-y-6">
-      {/* Progress indicator for streaming */}
-      <ProgressCard isLoading={isLoading} progress={progress} stage={stage} />
-
-      {/* Therapeutic guidance - streaming or final */}
-      <TherapeuticGuidanceCard
-        response={finalResponse?.synthesized_response || streamingResponse}
-        isStreaming={!finalResponse}
-        isLoading={isLoading}
-      />
-
-      {/* Applied keywords - only show when final response is available */}
-      {finalResponse && (
-        <AppliedKeywordsCard keywords={finalResponse.keywords} />
+    <div className="flex flex-col h-full">
+      {isLoading && (
+        <div className="mb-4">
+          <ProgressCard
+            isLoading={isLoading}
+            progress={progress}
+            stage={stage}
+          />
+        </div>
       )}
 
-      {/* Empty state */}
-      {showEmptyState && <EmptyResultsState />}
+      <div className="flex flex-col flex-1 gap-4">
+        {/* Therapeutic guidance - expands to fill available space */}
+        <div className="flex-1">
+          <TherapeuticGuidanceCard
+            response={finalResponse?.synthesized_response || streamingResponse}
+            isStreaming={!finalResponse}
+            isLoading={isLoading}
+          />
+        </div>
+
+        {finalResponse && (
+          <div className="flex-shrink-0">
+            <AppliedKeywordsCard keywords={finalResponse.keywords} />
+          </div>
+        )}
+
+        {showEmptyState && (
+          <div className="flex-1">
+            <EmptyResultsState />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -17,7 +17,7 @@ export function TherapeuticGuidanceCard({
   if (!response && !isLoading) return null;
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Brain className="h-5 w-5 mr-2 text-legacy-green" />
@@ -30,8 +30,8 @@ export function TherapeuticGuidanceCard({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="prose prose-sm max-w-none">
+      <CardContent className="flex-1 flex flex-col">
+        <div className="prose prose-sm max-w-none flex-1">
           <div className="whitespace-pre-wrap text-gray-700">
             {response}
             {isLoading && isStreaming && response && (
