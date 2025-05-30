@@ -40,10 +40,14 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=[
+        "https://v0-mental-health-therapist-copilot.vercel.app/",
+        "https://v0-mental-health-therapist-copilot.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["*"
 )
 
 # Hello World route

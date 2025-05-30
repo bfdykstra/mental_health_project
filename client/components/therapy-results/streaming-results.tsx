@@ -28,6 +28,10 @@ export function StreamingResults({
 
   return (
     <div className="flex flex-col h-full">
+      {/* Empty state - positioned at top when no content */}
+      {showEmptyState && <EmptyResultsState />}
+
+      {/* Progress indicator for streaming - positioned at top when loading */}
       {isLoading && (
         <div className="mb-4">
           <ProgressCard
@@ -38,28 +42,28 @@ export function StreamingResults({
         </div>
       )}
 
-      <div className="flex flex-col flex-1 gap-4">
-        {/* Therapeutic guidance - expands to fill available space */}
-        <div className="flex-1">
-          <TherapeuticGuidanceCard
-            response={finalResponse?.synthesized_response || streamingResponse}
-            isStreaming={!finalResponse}
-            isLoading={isLoading}
-          />
-        </div>
-
-        {finalResponse && (
-          <div className="flex-shrink-0">
-            <AppliedKeywordsCard keywords={finalResponse.keywords} />
-          </div>
-        )}
-
-        {showEmptyState && (
+      {/* Main content area - only show when there's content or loading */}
+      {!showEmptyState && (
+        <div className="flex flex-col flex-1 gap-4">
+          {/* Therapeutic guidance - expands to fill available space */}
           <div className="flex-1">
-            <EmptyResultsState />
+            <TherapeuticGuidanceCard
+              response={
+                finalResponse?.synthesized_response || streamingResponse
+              }
+              isStreaming={!finalResponse}
+              isLoading={isLoading}
+            />
           </div>
-        )}
-      </div>
+
+          {/* Applied keywords - fixed size at bottom when available */}
+          {finalResponse && (
+            <div className="flex-shrink-0">
+              <AppliedKeywordsCard keywords={finalResponse.keywords} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
