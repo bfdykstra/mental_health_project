@@ -13,6 +13,7 @@ class Config:
     openai_api_key: str = os.getenv('OPENAI_API_KEY', '')
     embedding_model: str = "text-embedding-ada-002"
     tagging_model: str = "gpt-4o-mini"
+    synthesis_model: str = "gpt-4.1"
     
     # Database Configuration
     chroma_db_path: str = "./chroma_db"

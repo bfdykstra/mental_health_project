@@ -15,6 +15,8 @@ import logging
 from embeddings.search_embeddings import EmbeddingSearcher
 from utils.llm_utils import llm_client
 
+from utils.config import Config
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -29,7 +31,7 @@ def synthesize_therapy_response(
     
     This function:
     1. Searches for similar patient conversations using semantic search
-    2. Extracts high-quality responses from the similar examples
+    2. Extracts high-quality therapist responses from the similar examples
     3. Uses an LLM to synthesize a response based on the examples
     4. Returns structured results including examples and synthesized response
     
@@ -147,7 +149,7 @@ def _generate_synthesized_response(
         
         # Call the LLM
         response = llm_client.sync_client.chat.completions.create(
-            model="gpt-4.1",
+            model=Config.synthesis_model,
             messages=[
                 {
                     "role": "system",
