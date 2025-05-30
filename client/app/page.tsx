@@ -21,6 +21,7 @@ import {
   THERAPY_KEYWORDS,
 } from "@/types/therapy";
 import { MultiSelect } from "@/components/multi-select";
+import { fetchApi } from "@/lib/api";
 
 export default function TherapyCopilot() {
   const [query, setQuery] = useState("");
@@ -41,17 +42,15 @@ export default function TherapyCopilot() {
         top_k: topK,
       };
 
-      const res = await fetch("/api/therapy-advice", {
+      const res = await fetchApi("/synthesize-therapy-response", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(requestData),
       });
-
-      if (!res.ok) throw new Error("Failed to get advice");
-
-      const data: TherapyResponse = await res.json();
+      console.log("Response:", res);
+      const data: TherapyResponse = res;
       setResponse(data);
     } catch (error) {
       console.error("Error:", error);
@@ -233,9 +232,31 @@ export default function TherapyCopilot() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-gray-700">
+                          <p className="text-sm text-gray-700 mb-3">
                             {example.prompt}
                           </p>
+                          {/* Display search keywords if available */}
+                          {example.metadata?.search_keywords &&
+                            example.metadata.search_keywords.length > 0 && (
+                              <div className="mt-2">
+                                <span className="text-xs font-medium text-gray-600 mb-1 block">
+                                  Search Keywords:
+                                </span>
+                                <div className="flex flex-wrap gap-1">
+                                  {example.metadata.search_keywords.map(
+                                    (keyword: string, keywordIndex: number) => (
+                                      <Badge
+                                        key={keywordIndex}
+                                        variant="secondary"
+                                        className="text-xs"
+                                      >
+                                        {keyword}
+                                      </Badge>
+                                    )
+                                  )}
+                                </div>
+                              </div>
+                            )}
                         </div>
                       ))}
                     </div>

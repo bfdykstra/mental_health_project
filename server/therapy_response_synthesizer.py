@@ -175,39 +175,64 @@ def _build_synthesis_prompt(
     high_quality_examples: List[Dict[str, Any]]
 ) -> str:
     """
-    Build the prompt for the LLM to synthesize a therapy response.
+    Build the prompt for the LLM to synthesize a therapy response using reflective listening principles.
     
     Args:
         user_query: The user's query
-        high_quality_examples: Examples with high-quality responses
+        high_quality_examples: Examples with high-quality responses (hq1, hq2)
         
     Returns:
-        Formatted prompt string
+        Formatted prompt string incorporating reflective listening skills
     """
-    prompt = """You are tasked with providing a high-quality therapeutic response based on similar patient interactions.
+    prompt = """You are an expert mental health therapist specializing in reflective listening techniques. Your role is to provide therapeutic responses that demonstrate core reflective listening skills based on similar high-quality patient interactions.
 
-Below are examples of similar patient situations and the high-quality responses that therapists provided:
+REFLECTIVE LISTENING FRAMEWORK:
+1. EMPATHY: Understand the patient's internal frame of reference rather than imposing external judgments
+2. ACCEPTANCE: Show unconditional respect for the person without agreement/disagreement  
+3. VALIDATION: Acknowledge and affirm the patient's emotions and experiences as legitimate
+4. REFLECTION: Mirror back what you hear in the patient's own words, focusing on feelings and meaning
+5. CONCRETENESS: Help the patient explore specific situations rather than vague generalities
+
+Below are examples of similar patient situations and high-quality therapeutic responses that demonstrate reflective listening:
 
 """
     
-    # Add examples
+    # Add examples with reflective listening analysis
     for i, example in enumerate(high_quality_examples, 1):
         prompt += f"--- Example {i} ---\n"
-        prompt += f"Patient Situation: {example['prompt']}\n"
-        prompt += f"High-Quality Therapist Responses:\n"
+        prompt += f"Patient Statement: {example['prompt']}\n"
+        prompt += f"High-Quality Reflective Responses:\n"
         
         for j, response in enumerate(example['high_quality_responses'], 1):
             prompt += f"{j}. {response}\n"
+        
+        prompt += "\n"
       
-    prompt += f"""--- Current Situation ---
+    prompt += f"""--- Current Patient Statement ---
 {user_query}
 
-Based on the high-quality examples above, please provide a thoughtful, empathetic, and clinically appropriate response. Consider:
-1. The therapeutic techniques demonstrated in the examples
-2. The tone and approach used in high-quality responses  
-3. The specific context and needs presented in the current situation
-4. Professional boundaries and best practices
+INSTRUCTIONS FOR YOUR RESPONSE:
+Using reflective listening principles, provide a therapeutic response that:
 
-Your synthesized response:"""
+1. REFLECTS THE PATIENT'S PERSPECTIVE: Use their own words and frame of reference, not your interpretation
+2. VALIDATES EMOTIONS: Acknowledge the feelings present in their statement as real and understandable  
+3. DEMONSTRATES EMPATHY: Show you understand their internal experience without judgment
+4. FOCUSES ON THE PERSON: Respond to what is personal rather than abstract or impersonal details
+5. ENCOURAGES EXPLORATION: Create space for the patient to go deeper into their thoughts and feelings
+
+REFLECTIVE LISTENING TECHNIQUES TO USE:
+- Simple reflection: "You feel that..." or "It sounds like..."
+- Feeling reflection: Identify and reflect the emotions you hear
+- Meaning reflection: Reflect the underlying significance or values expressed
+- Double-sided reflection: Acknowledge ambivalence when present ("On one hand... and on the other hand...")
+
+AVOID:
+- Giving advice or solutions unless specifically requested
+- Asking multiple questions 
+- Imposing your own frame of reference
+- Minimizing or dismissing their concerns
+- Being overly clinical or detached
+
+Your reflective listening response:"""
     
     return prompt 

@@ -59,13 +59,6 @@ async def health_check():
     """
     return {"status": "healthy", "service": "Mental Health API"}
 
-# Additional hello endpoint with path parameter
-@app.get("/hello/{name}")
-async def hello_name(name: str):
-    """
-    Personalized hello endpoint
-    """
-    return {"message": f"Hello, {name}!"}
 
 # Therapy Response Synthesis endpoint
 @app.post("/synthesize-therapy-response", response_model=TherapyResponse)
