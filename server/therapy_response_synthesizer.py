@@ -10,8 +10,9 @@ as examples for an LLM to generate a contextually appropriate response.
 import sys
 import os
 
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, AsyncGenerator
 import logging
+import asyncio
 from embeddings.search_embeddings import EmbeddingSearcher
 from utils.llm_utils import llm_client
 
@@ -236,3 +237,191 @@ AVOID:
 Your reflective listening response:"""
     
     return prompt 
+
+async def synthesize_therapy_response_streaming(
+    user_query: str,
+    keywords: Optional[List[str]] = None,
+    top_k: int = 5
+) -> AsyncGenerator[Dict[str, Any], None]:
+    """
+    Async streaming version of therapy response synthesis.
+    
+    Yields real-time events during the synthesis process:
+    - progress updates
+    - similar examples as found
+    - synthesized response chunks
+    
+    Args:
+        user_query: Free text query containing patient transcript and/or question
+        keywords: Optional list of keywords to filter search results
+        top_k: Number of similar examples to retrieve (default: 5)
+        
+    Yields:
+        Dictionary events with type, data, and timestamp
+    """
+    logger.info(f"Starting streaming therapy response synthesis for query: {user_query[:100]}...")
+    
+    # Initialize keywords if None
+    if keywords is None:
+        keywords = []
+    
+    try:
+        # Yield initial progress
+        yield {
+            "type": "progress",
+            "message": "Starting synthesis process...",
+            "stage": "initialization",
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        # Initialize the embedding searcher
+        searcher = EmbeddingSearcher()
+        
+        # Yield search progress
+        yield {
+            "type": "progress",
+            "message": f"Searching for {top_k} similar examples...",
+            "stage": "search",
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        # Search for similar examples (run in thread to avoid blocking)
+        similar_examples = await asyncio.to_thread(
+            searcher.search,
+            query=user_query,
+            top_k=top_k,
+            keyword_filter=keywords if keywords else None,
+            include_metadata=True
+        )
+        
+        if not similar_examples:
+            yield {
+                "type": "error",
+                "message": "No similar examples found",
+                "timestamp": asyncio.get_event_loop().time()
+            }
+            return
+        
+        # Yield similar examples as they're processed
+        yield {
+            "type": "similar_examples",
+            "data": similar_examples,
+            "count": len(similar_examples),
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        # Extract high-quality responses
+        yield {
+            "type": "progress",
+            "message": "Processing high-quality examples...",
+            "stage": "processing",
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        high_quality_examples = []
+        for example in similar_examples:
+            metadata = example.get('metadata', {})
+            quality_buckets = metadata.get('quality_buckets', {})
+            hq_responses = quality_buckets.get('high_quality', [])
+            if hq_responses:
+                high_quality_examples.append({
+                    'prompt': example['prompt'],
+                    'high_quality_responses': hq_responses,
+                    'similarity_score': example.get('similarity_score', 0)
+                })
+        
+        if not high_quality_examples:
+            yield {
+                "type": "error",
+                "message": "No high-quality examples found",
+                "timestamp": asyncio.get_event_loop().time()
+            }
+            return
+        
+        # Generate synthesized response with streaming
+        yield {
+            "type": "progress",
+            "message": "Generating therapeutic response...",
+            "stage": "synthesis",
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+        # Stream the LLM response
+        synthesized_response = ""
+        async for chunk in _generate_synthesized_response_streaming(
+            user_query=user_query,
+            high_quality_examples=high_quality_examples
+        ):
+            synthesized_response += chunk
+            yield {
+                "type": "response_chunk",
+                "chunk": chunk,
+                "accumulated_response": synthesized_response,
+                "timestamp": asyncio.get_event_loop().time()
+            }
+        
+        # Yield final complete result
+        yield {
+            "type": "complete",
+            "data": {
+                "similar_examples": similar_examples,
+                "synthesized_response": synthesized_response,
+                "keywords": keywords,
+                "user_query": user_query
+            },
+            "timestamp": asyncio.get_event_loop().time()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in streaming therapy response synthesis: {e}")
+        yield {
+            "type": "error",
+            "message": str(e),
+            "timestamp": asyncio.get_event_loop().time()
+        }
+
+async def _generate_synthesized_response_streaming(
+    user_query: str,
+    high_quality_examples: List[Dict[str, Any]]
+) -> AsyncGenerator[str, None]:
+    """
+    Generate a synthesized therapy response using streaming LLM with high-quality examples as context.
+    
+    Args:
+        user_query: The user's query containing patient information and question
+        high_quality_examples: List of similar examples with their high-quality responses
+        
+    Yields:
+        String chunks of the synthesized response
+    """
+    try:
+        # Build the prompt with examples
+        prompt = _build_synthesis_prompt(user_query, high_quality_examples)
+        
+        # Stream the LLM response
+        stream = await asyncio.to_thread(
+            llm_client.sync_client.chat.completions.create,
+            model=Config.synthesis_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert mental health therapist. Your role is to provide thoughtful, empathetic, and clinically sound responses to patients based on similar examples of high-quality therapeutic interactions."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.7,
+            max_tokens=1000,
+            stream=True
+        )
+        
+        # Yield chunks as they arrive
+        for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield chunk.choices[0].delta.content
+        
+    except Exception as e:
+        logger.error(f"Error generating streaming synthesized response: {e}")
+        yield "I apologize, but I encountered an error while generating a response. Please try again or consult with a supervisor." 

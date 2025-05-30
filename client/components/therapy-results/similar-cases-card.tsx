@@ -15,6 +15,9 @@ interface SimilarCasesCardProps {
 }
 
 export function SimilarCasesCard({ examples }: SimilarCasesCardProps) {
+  if (examples.length) {
+    console.log("examples", examples);
+  }
   return (
     <Card>
       <CardHeader>

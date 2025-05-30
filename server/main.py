@@ -1,10 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, AsyncGenerator
 import logging
+import json
+import asyncio
 
-from therapy_response_synthesizer import synthesize_therapy_response
+from therapy_response_synthesizer import synthesize_therapy_response, synthesize_therapy_response_streaming
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -154,7 +157,65 @@ async def test_therapy_synthesis():
         logger.error(f"Error in test synthesis: {e}")
         raise HTTPException(status_code=500, detail=f"Test synthesis failed: {str(e)}")
 
-
+# Streaming therapy Response Synthesis endpoint
+@app.post("/synthesize-therapy-response/stream")
+async def synthesize_therapy_response_stream(request: TherapyRequest):
+    """
+    Stream a therapy response synthesis in real-time.
+    
+    This endpoint provides real-time updates during the synthesis process:
+    1. Sends progress updates as the search occurs
+    2. Streams similar examples as they're found
+    3. Sends synthesized response chunks as they're generated
+    4. Returns structured results via Server-Sent Events (SSE)
+    
+    Args:
+        request: TherapyRequest containing user_query, optional keywords, and top_k
+        
+    Returns:
+        StreamingResponse with SSE events
+    """
+    try:
+        logger.info(f"Received streaming therapy synthesis request for query: {request.user_query[:100]}...")
+        
+        # Validate input
+        if not request.user_query.strip():
+            raise HTTPException(status_code=400, detail="user_query cannot be empty")
+        
+        async def generate_stream():
+            try:
+                async for event_data in synthesize_therapy_response_streaming(
+                    user_query=request.user_query,
+                    keywords=request.keywords,
+                    top_k=request.top_k
+                ):
+                    yield f"data: {json.dumps(event_data)}\n\n"
+            except Exception as e:
+                error_event = {
+                    "type": "error",
+                    "message": str(e),
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+                yield f"data: {json.dumps(error_event)}\n\n"
+        
+        return StreamingResponse(
+            generate_stream(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Headers": "*",
+                "Access-Control-Allow-Methods": "*"
+            }
+        )
+        
+    except ValueError as e:
+        logger.error(f"Validation error in streaming therapy synthesis: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Unexpected error in streaming therapy synthesis: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error occurred during streaming synthesis")
 
 if __name__ == "__main__":
     import uvicorn
