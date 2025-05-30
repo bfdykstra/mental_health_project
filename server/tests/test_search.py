@@ -25,6 +25,7 @@ def main():
         print(f"Found {len(results)} results:")
         
         for i, result in enumerate(results, 1):
+            print(result['metadata'])
             print(f"\n{i}. Similarity: {result['similarity_score']:.3f}")
             print(f"   Prompt: {result['prompt'][:100]}...")
             print(f"   Keywords: {result['metadata']['search_keywords']}")

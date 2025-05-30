@@ -62,23 +62,40 @@ def extract_keywords_from_metadata(metadata: Dict[str, Any]) -> List[str]:
     return [key for key, value in metadata.items() 
             if key not in ['prompt', 'quality_buckets', 'row_index'] and value is True]
 
-def parse_quality_buckets_from_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
-    """Parse quality buckets JSON string from metadata back to dict."""
-    quality_buckets_str = metadata.get('quality_buckets', '{}')
-    try:
-        return json.loads(quality_buckets_str)
-    except:
-        return {}
 
 def process_search_result_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
-    """Process metadata from search results to extract keywords and quality buckets."""
+    """Process metadata from search results to extract keywords and quality buckets.
+    
+    This function ensures consistent metadata format:
+    - quality_buckets: Always a dictionary (not JSON string)
+    - search_keywords: Always a list of strings
+    """
     processed_metadata = metadata.copy()
     
     # Extract search keywords from boolean fields
     search_keywords = extract_keywords_from_metadata(metadata)
     processed_metadata['search_keywords'] = search_keywords
     
-    # Parse quality buckets JSON string back to dict
-    processed_metadata['quality_buckets'] = parse_quality_buckets_from_metadata(metadata)
+    # Ensure quality_buckets is always a parsed dictionary
+    quality_buckets = metadata.get('quality_buckets', '{}')
+    
+    # Check if it's already a dictionary
+    if isinstance(quality_buckets, dict):
+        print('found a dict')
+        processed_metadata['quality_buckets'] = quality_buckets
+    else:
+        # If it's a string, parse it as JSON
+        try:
+            processed_metadata['quality_buckets'] = json.loads(quality_buckets)
+        except Exception as e:
+            print(f'Error parsing quality_buckets in process_search_result_metadata: {e}')
+            print(f'quality_buckets type: {type(quality_buckets)}')
+            print(f'quality_buckets value: {quality_buckets}')
+            # Fallback to empty structure
+            processed_metadata['quality_buckets'] = {
+                'high_quality': [],
+                'medium_quality': [],
+                'low_quality': []
+            }
     
     return processed_metadata 
