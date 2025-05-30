@@ -399,10 +399,8 @@ async def _generate_synthesized_response_streaming(
     try:
         # Build the prompt with examples
         prompt = _build_synthesis_prompt(user_query, high_quality_examples)
-        
-        # Stream the LLM response
-        stream = await asyncio.to_thread(
-            llm_client.sync_client.chat.completions.create,
+
+        stream = await llm_client.async_client.chat.completions.create(
             model=Config.synthesis_model,
             messages=[
                 {
@@ -420,7 +418,7 @@ async def _generate_synthesized_response_streaming(
         )
         
         # Yield chunks as they arrive
-        for chunk in stream:
+        async for chunk in stream:
             if chunk.choices[0].delta.content:
                 yield chunk.choices[0].delta.content
         
